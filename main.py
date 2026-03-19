@@ -1,25 +1,34 @@
 import os
-import anthropic
 from flask import Flask, request, abort
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
-    Configuration, ApiClient, MessagingApi,
-    ReplyMessageRequest, TextMessage
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    ReplyMessageRequest,
+    TextMessage
 )
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
+import anthropic
 
 app = Flask(__name__)
 
-configuration = Configuration(access_token=os.environ['LINE_CHANNEL_ACCESS_TOKEN'])
-handler = WebhookHandler(os.environ['LINE_CHANNEL_SECRET'])
-anthropic_client = anthropic.Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
+configuration = Configuration(
+    access_token=os.environ.get('LINE_CHANNEL_ACCESS_TOKEN')
+)
+handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET'))
+client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
 
 conversation_history = {}
 
+@app.route("/")
+def index():
+    return "Claude LINE Bot is running!"
+
 @app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers['X-Line-Signature']
+    signature = request.headers.get('X-Line-Signature', '')
     body = request.get_data(as_text=True)
     try:
         handler.handle(body, signature)
@@ -43,7 +52,7 @@ def handle_message(event):
     if len(conversation_history[user_id]) > 20:
         conversation_history[user_id] = conversation_history[user_id][-20:]
 
-    response = anthropic_client.messages.create(
+    response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1000,
         system="あなたは親切なAIアシスタントです。日本語で回答してください。",
@@ -67,5 +76,5 @@ def handle_message(event):
         )
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
