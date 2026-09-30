@@ -558,7 +558,7 @@
     ctx.restore();
     sparkle(ctx, x + 9, y - 10, 9 * flare + 3 * tw, 0.9 * Math.max(flare, 0.4 * tw));
     if (flare > 0.05) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = rgba(P.starCore, 0.7 * flare); ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(x - 40 * flare, y); ctx.lineTo(x + 40 * flare, y); ctx.moveTo(x, y - 30 * flare); ctx.lineTo(x, y + 30 * flare); ctx.stroke(); ctx.restore(); }
+      for (const [dx, dy] of [[1, 0], [0, 1]]) { const L = (dx ? 30 : 22) * flare; const g = ctx.createLinearGradient(x - dx * L, y - dy * L, x + dx * L, y + dy * L); g.addColorStop(0, rgba(P.starCore, 0)); g.addColorStop(0.5, rgba(P.starCore, 0.9 * flare)); g.addColorStop(1, rgba(P.starCore, 0)); ctx.strokeStyle = g; ctx.beginPath(); ctx.moveTo(x - dx * L, y - dy * L); ctx.lineTo(x + dx * L, y + dy * L); ctx.stroke(); } ctx.restore(); }
   }
 
   // ---------------------------------------------------------------- A.drawMio
