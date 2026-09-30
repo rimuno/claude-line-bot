@@ -47,10 +47,10 @@ env = np.convolve(env, np.ones(k) / k, 'same'); gate = (env > 0.01).astype(np.fl
 g = np.empty(N, np.float32); cur = 0.0; a_up = 1 - np.exp(-1 / (0.08 * SR)); a_dn = 1 - np.exp(-1 / (0.4 * SR))
 for i in range(N):
     cur += (gate[i] - cur) * (a_up if gate[i] > cur else a_dn); g[i] = cur
-duck = 10 ** (-7 * g / 20)
+duck = 10 ** (-6 * g / 20)
 
 def rms(x): return np.sqrt(np.mean(x ** 2) + 1e-12)
-bgm_gain = 0.22 / max(rms(bgm), 1e-6) * rms(voice) if rms(bgm) > 1e-5 else 0
+bgm_gain = 0.36 / max(rms(bgm), 1e-6) * rms(voice) if rms(bgm) > 1e-5 else 0
 mix = voice + bgm * bgm_gain * duck[:, None] * 1.0 + sfx * 0.9
 # ソフトリミッタ
 peak = np.abs(mix).max(); mix = np.tanh(mix / max(peak, 1) * 1.2) / np.tanh(1.2) * 0.93

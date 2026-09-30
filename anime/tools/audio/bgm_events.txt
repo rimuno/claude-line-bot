@@ -1,0 +1,9 @@
+  0.00  A intro: F | C/E | Dm7 Dm7/C  — music box states theme
+  9.00  B curious: Bbmaj7 | F/A | Gm7 | C7sus4 C7  — pizzicato + celesta questions
+ 21.00  C sad turn (relative minor): Dm | Dm/C | Bbmaj7 | Gm6 A7sus4 A7
+ 26.80  D hopeful lift: Bbadd9 | Csus4 C | C7 pickup (29.6)
+ 31.00  E warm build: F | C/E | Dm7 Dm7/C | Bbmaj7 Gm7 | C7sus4 C7 -> 44.6 F
+ 44.60  CLIMAX: tutti F (strings, choir, glock, piano, timpani, cymbal)
+ 45.00  F tender reprise: F C/E | Dm7 | Bbmaj7 Gm7 — solo piano + soft strings
+ 53.00  G lift-off swell: C7sus4 crescendo + harp gliss
+ 54.00  H finale: Bbmaj7 | C7sus4 C7 | F (57.0) ring & fade to 60
