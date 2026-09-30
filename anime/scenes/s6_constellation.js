@@ -57,7 +57,7 @@
     const hand = E().MIO_CONSTELLATION.hand;
     // the hand star waves in sync with tiny Mio (her wave: sin(t*9))
     const wv = A.range(t, CUE0 + 7 * CUE_DT, CUE0 + 7 * CUE_DT + 0.3);
-    pts[hand].x += -7 * Math.sin(t * 9) * wv; pts[hand].y += 2.5 * Math.cos(t * 9) * wv;
+    const wx = Math.cos(waveX(t)); pts[hand].x += 10 * (wx - 0.55) * wv; pts[hand].y += 3 * (wx - 0.55) * wv;
     return { points: pts, lines: C.lines };
   }
   function linesP(t) {
@@ -95,7 +95,7 @@
     const hand = E().MIO_CONSTELLATION.hand; const hp = C.points[hand];
     const hk = A.range(t, CUE0 + 7 * CUE_DT, CUE0 + 7 * CUE_DT + 0.25);
     if (hk > 0) {
-      const tw = 0.5 + 0.5 * Math.sin(t * 9 + 1.2);
+      const tw = 0.5 + 0.5 * Math.cos(2 * waveX(t));
       E().sparkle(ctx, hp.x, hp.y, (38 + 34 * tw) * hk, '#fff2c0', 0.85 * hk, Math.sin(t * 4.5) * 0.3);
       A.glow(ctx, hp.x, hp.y, (50 + 30 * tw) * hk, '#ffe28a', 0.35 * hk);
       // a few motes shaken off the waving hand
@@ -171,19 +171,37 @@
   }
 
   // ---------------------------------------------------------------- Mio
+  // The library's wave swings the hand all the way in over the head (reads as head-scratching at this size).
+  // Work-around: feed drawMio a remapped time whose sin(9t') stays in the outward half of the swing.
+  // t' = C + phi/9 with C a multiple of 2π/9 (so sin(9t') = sin(phi)); other t-driven details only jiggle ±0.2 s.
+  const WAVE_W = 4.5, WAVE_A = 1.65;
+  const waveX = (t) => WAVE_A * Math.sin(WAVE_W * (t - 55.0));          // arm phase (0 = most outward)
+  const WAVE_C = (() => { // pick a base time whose ±0.25 s neighbourhood has eyes open and no dialogue
+    const step = (2 * Math.PI) / 9;
+    for (let k = Math.round(56 / step); k < Math.round(56 / step) + 40; k++) {
+      const c = k * step; let ok = true;
+      for (let d = -0.3; d <= 0.3; d += 0.01) if (A.blink(c + d, 1) < 1 || A.isSpeaking('mio', c + d)) { ok = false; break; }
+      if (ok) return c;
+    }
+    return Math.round(56 / step) * step;
+  })();
+  const waveT = (t) => WAVE_C + (-Math.PI / 2 + waveX(t)) / 9;
   function mioState(t) {
     const waveOn = t >= 55.0;
     // anticipation dip 54.72–55.0, then stretch on the pop, settle with overshoot
-    const dip = Math.sin(Math.PI * A.range(t, 54.72, 55.0)) * 1.0;
+    const dip = Math.sin(Math.PI * A.range(t, 54.7, 55.0));
     const pop = A.range(t, 55.0, 55.45); const stretch = waveOn ? Math.sin(Math.PI * pop) * (1 - pop) * 1.6 : 0;
-    const sy = 1 - 0.05 * dip + 0.06 * stretch, sx = 1 + 0.035 * dip - 0.03 * stretch;
-    const hop = waveOn ? -10 * Math.sin(Math.PI * A.range(t, 55.0, 55.35)) : 0;
-    // gaze: follows Hoshi (up, then left toward the gap), then down-left toward... the new constellation (up-left)
+    const sy = 1 - 0.06 * dip + 0.07 * stretch, sx = 1 + 0.04 * dip - 0.035 * stretch;
+    const hop = waveOn ? -12 * Math.sin(Math.PI * A.range(t, 55.0, 55.32)) : 0;
+    // gaze: follows Hoshi up and to the left (face=-1: +x looks screen-left)
     const u = hU(t);
-    const look = { x: A.lerp(0.1, 0.75, A.smooth(u)), y: -1 };
-    const tilt = -0.22 + 0.05 * Math.sin(t * 1.1) - 0.06 * A.range(t, 55.6, 57.2);
+    const look = { x: A.lerp(0.1, 0.8, A.smooth(u)), y: A.lerp(-1.1, -1.5, A.smooth(u)) };
+    // positive headTilt (mirrored) = chin up
+    const tilt = 0.12 + 0.05 * A.smooth(u) + 0.03 * Math.sin(t * 1.1);
     const expr = t < 54.9 ? 'teary_smile' : 'smile';
-    return { pose: waveOn ? 'wave' : 'stand', sx, sy, hop, look, tilt, expr };
+    // body sway that follows the waving arm (follow-through)
+    const sway = waveOn ? 0.025 * Math.cos(waveX(t)) * A.range(t, 55.0, 55.4) : 0.01 * Math.sin(t * 1.3);
+    return { pose: waveOn ? 'wave' : 'stand', sx, sy, hop, look, tilt, expr, sway, tt: waveOn ? waveT(t) : t };
   }
 
   A.scene('s6_constellation', {
@@ -244,14 +262,14 @@
         const st = mioState(t);
         // contact shadow
         ctx.save(); ctx.fillStyle = 'rgba(5,10,30,0.45)'; ctx.beginPath(); ctx.ellipse(MIO.x, fy, 38 * MIO.s, 7 * MIO.s, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-        ctx.save(); ctx.translate(MIO.x, fy + st.hop * MIO.s); ctx.scale(st.sx, st.sy);
+        ctx.save(); ctx.translate(MIO.x, fy + st.hop * MIO.s); ctx.rotate(st.sway); ctx.scale(st.sx, st.sy);
         const hs = hoshiScreen(u, cam, gap);
         // Hoshi's light on Mio while it's still near; afterwards the warm town light from below-left
         const inv = { x: cam.x + (hs.x - W / 2) / cam.zoom, y: cam.y + (hs.y - H / 2) / cam.zoom };
         const near = 1 - A.range(t, 53.5, 54.6);
         const light = near > 0.02 ? { x: (inv.x - MIO.x) / st.sx, y: (inv.y - fy) / st.sy, color: A.PAL.star, strength: 0.9 * near, radius: 700 }
           : { x: -520, y: -60, color: A.PAL.warm, strength: 0.45, radius: 900 };
-        mioInfo = A.drawMio(ctx, { x: 0, y: 0, s: MIO.s, t, pose: st.pose, expr: st.expr, face: -1, look: st.look, headTilt: st.tilt, hairpin: 1, wind: 0.45, light });
+        mioInfo = A.drawMio(ctx, { x: 0, y: 0, s: MIO.s, t: st.tt, mouth: { v: 'closed', open: 0 }, pose: st.pose, expr: st.expr, face: -1, look: st.look, headTilt: st.tilt, hairpin: 1, wind: 0.45, light });
         ctx.restore();
         // hairpin twinkle (answers the constellation)
         if (mioInfo) {
