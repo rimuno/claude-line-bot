@@ -1,0 +1,5 @@
+node_modules/
+out/
+audio/*.wav
+!audio/final_mix.wav
+__pycache__/
