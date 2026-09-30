@@ -175,9 +175,13 @@
         const cl = A.noise2(x * 0.011, y * 0.011, 5); if (cl < -0.05) continue;
         blob(x, y, 4 + r() * 16, ['#ffffff', '#ffe8d6', '#e8dcff', '#d6ecff'][(r() * 4) | 0], 0.11 * inten(h) * (cl + 0.25));
       }
+      for (let i = 0; i < 70; i++) { // bright star-cloud knots along the core
+        const h = r() * 3100, d = gauss(r) * 35; const [x, y] = P(h, d);
+        blob(x, y, 30 + r() * 70, r() < 0.5 ? '#fff2e4' : '#ffe0c8', 0.13 * inten(h));
+      }
       for (let i = 0; i < 90; i++) { // faint pink/teal nebula knots
         const h = r() * 3100, d = gauss(r) * 60; const [x, y] = P(h, d);
-        blob(x, y, 20 + r() * 50, r() < 0.6 ? '#ff7fae' : '#6fe0e0', 0.08 * inten(h));
+        blob(x, y, 25 + r() * 60, r() < 0.6 ? '#ff7fae' : '#6fe0e0', 0.1 * inten(h));
       }
       g.globalCompositeOperation = 'destination-out'; // dark rifts
       for (let i = 0; i < 2600; i++) {
@@ -260,7 +264,7 @@
     }
     if (o.constellationGap) {
       const pts = CROWN.map((s) => ({ x: s.x + OX, y: sy(s.h), m: s.m, gap: s.gap }));
-      const la = 0.06 + 0.32 * o.gapPulse; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+      const la = 0.07 + 0.5 * o.gapPulse; ctx.lineWidth = 1.2 + 0.6 * o.gapPulse; ctx.lineCap = 'round';
       for (let k = 0; k < 6; k++) {
         const p0 = pts[k], p1 = pts[k + 1]; const dx = p1.x - p0.x, dy = p1.y - p0.y, L = Math.hypot(dx, dy); const ux = dx / L, uy = dy / L;
         const touchesGap = p0.gap || p1.gap;
@@ -277,10 +281,13 @@
       }
       const G = pts[3];
       if (o.gapPulse > 0) {
-        const pu = o.gapPulse * (0.65 + 0.35 * Math.sin(t * 3.2));
-        spr(ctx, glowSprite('#9fb8ff'), G.x, G.y, 70, 0.35 * pu);
-        const ph = frac(t * 0.8); ctx.strokeStyle = rgba('#d8e4ff', 0.55 * pu * (1 - ph)); ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(G.x, G.y, 12 + 16 * ph, 0, TAU); ctx.stroke();
+        const pu = o.gapPulse * (0.7 + 0.3 * Math.sin(t * 3.2));
+        spr(ctx, glowSprite('#8fb0ff'), G.x, G.y, 95, 0.55 * pu); spr(ctx, glowSprite('#dfe8ff'), G.x, G.y, 28, 0.65 * pu);
+        for (let k = 0; k < 2; k++) {
+          const ph = frac(t * 0.7 + k * 0.5); ctx.strokeStyle = rgba('#e8f0ff', pu * Math.pow(1 - ph, 1.2)); ctx.lineWidth = 2.6 - 1.4 * ph;
+          ctx.beginPath(); ctx.arc(G.x, G.y, 10 + 30 * A.ease.outCubic(ph), 0, TAU); ctx.stroke();
+        }
+        ctx.setLineDash([3, 6]); ctx.strokeStyle = rgba('#e0eaff', 0.5 * pu); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(G.x, G.y, 9, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
       }
       if (o.gapFilled > 0) {
         const f = o.gapFilled; spr(ctx, glowSprite(A.PAL.star), G.x, G.y, 60, 0.6 * f); spr(ctx, coreSprite(A.PAL.star), G.x, G.y, 10, f);
@@ -321,7 +328,7 @@
   const CLOUDS = [
     { h: 60, x: 250, v: 0, sp: 5, sc: 1.2, a: 0.7, warm: 1 }, { h: 115, x: 1350, v: 1, sp: 4, sc: 1.0, a: 0.6, warm: 1 },
     { h: 250, x: 1500, v: 2, sp: 8, sc: 1.0, a: 0.6 }, { h: 410, x: 380, v: 3, sp: 7, sc: 0.9, a: 0.55 },
-    { h: 980, x: 1100, v: 4, sp: 11, sc: 1.2, a: 0.4 }, { h: 1550, x: 300, v: 5, sp: 9, sc: 1.4, a: 0.3 }, { h: 2150, x: 1500, v: 1, sp: 12, sc: 1.3, a: 0.25 },
+    { h: 900, x: 1250, v: 4, sp: 11, sc: 1.2, a: 0.35 }, { h: 1700, x: 200, v: 5, sp: 9, sc: 1.4, a: 0.18 },
   ];
   E.clouds = function (ctx, t, o) {
     o = opt(o, { offsetY: 0, offsetX: 0, horizonY: 780, alpha: 1 }); if (o.alpha <= 0) return;
@@ -342,7 +349,7 @@
     ctx.save();
     const g = ctx.createLinearGradient(0, HY, 0, Math.max(HY + 1, B));
     g.addColorStop(0, '#4a6394'); g.addColorStop(0.03, '#2c3a70'); g.addColorStop(0.2, '#1b2458'); g.addColorStop(1, '#0a0f31');
-    ctx.fillStyle = g; ctx.fillRect(-1200, HY, W + 2400, B - HY);
+    ctx.fillStyle = g; ctx.fillRect(-300, HY, W + 600, B - HY);
     // ripple lines (perspective spacing)
     ctx.globalCompositeOperation = 'lighter'; const r = A.rng(606);
     for (let i = 0; i < 170; i++) {
@@ -353,7 +360,7 @@
     }
     // horizon bright line
     const hl = ctx.createLinearGradient(0, HY - 2, 0, HY + 6); hl.addColorStop(0, rgba('#c9dcff', 0)); hl.addColorStop(0.35, rgba('#c9dcff', 0.35)); hl.addColorStop(1, rgba('#c9dcff', 0));
-    ctx.fillStyle = hl; ctx.fillRect(-1200, HY - 2, W + 2400, 8);
+    ctx.fillStyle = hl; ctx.fillRect(-300, HY - 2, W + 600, 8);
     // moon reflection shimmer
     if (o.moon) {
       const mx = MOON.x + o.offsetX; const rr = A.rng(707);
@@ -426,23 +433,45 @@
         if (r() < 0.08) { x += 6 + r() * 10; continue; }
         const hh = 30 + r() * 20 + (ri === 0 ? 6 : 0); const roofH = w * (0.38 + r() * 0.22); const side = r() < 0.2;
         const hs = { ri, x, y: -base, w, h: hh, roofH, side, wall: WALLS[(r() * WALLS.length) | 0], roof: ROOFS[(r() * ROOFS.length) | 0], chim: r() < 0.45 ? { u: 0.2 + r() * 0.6, w: 5 + r() * 3, h: 10 + r() * 8 } : null, door: ri === 0 && r() < 0.6, wins: [] };
-        const cols = w > 52 ? 3 : w > 38 ? 2 : 1; const wrows = hh > 40 ? 2 : 1;
-        for (let wr = 0; wr < wrows; wr++) for (let wc = 0; wc < cols; wc++) {
-          if (hs.door && wr === wrows - 1 && wc === 0 && cols > 1) continue;
-          const wx = x + (w * (wc + 0.5)) / cols - 3.5, wy = -base - hh + 9 + wr * 17;
-          const win = { x: wx, y: wy, w: 7, h: 9, row: ri, rank: 0, hue: r(), house: hs };
-          hs.wins.push(win); windows.push(win);
-        }
+        hs.hue = r(); hs.cols = w > 52 ? 3 : w > 38 ? 2 : 1;
         row.push(hs); x += w + 2 + r() * 8;
       }
       rows.push(row);
     }
     // clock tower on the ridge
     const tower = { x: 50, base: 24 + 8 * 27, w: 40, h: 150, ri: 8 };
-    for (const row of rows) for (let i = row.length - 1; i >= 0; i--) { const hs = row[i]; if (hs.ri >= 8 && hs.ri <= 9 && hs.x < tower.x + tower.w / 2 + 4 && hs.x + hs.w > tower.x - tower.w / 2 - 4) { for (const wi of hs.wins) windows.splice(windows.indexOf(wi), 1); row.splice(i, 1); } }
+    for (const row of rows) for (let i = row.length - 1; i >= 0; i--) { const hs = row[i]; if (hs.ri >= 8 && hs.ri <= 9 && hs.x < tower.x + tower.w / 2 + 4 && hs.x + hs.w > tower.x - tower.w / 2 - 4) { row.splice(i, 1); } }
     tower.face = { x: tower.x, y: -tower.base - tower.h + 28 };
     tower.wins = [{ x: tower.x - 3.5, y: -tower.base - 62, w: 7, h: 12, row: 8 }, { x: tower.x - 3.5, y: -tower.base - 34, w: 7, h: 12, row: 8 }];
     for (const w of tower.wins) windows.push(Object.assign(w, { rank: 0, hue: 0.5 }));
+    // occlusion: drop windows covered (even partly) by anything drawn in front of them (lower rows, trees, the tower)
+    const inTri = (px, py, ax, ay, bx, by, cx, cy) => { const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by), d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy), d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay); return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)); };
+    const houses = rows.flat();
+    const covered = (w) => {
+      const x0 = w.x - 1, x1 = w.x + w.w + 1, y0 = w.y - 1, y1 = w.y + w.h + 1; const corners = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]];
+      for (const hs of houses) {
+        if (hs.ri >= w.row) continue; const top = hs.y - hs.h;
+        if (x1 > hs.x && x0 < hs.x + hs.w && y1 > top && y0 < hs.y + 30) return true;
+        const rh = hs.side ? hs.roofH * 0.7 : hs.roofH; if (x1 < hs.x - 6 || x0 > hs.x + hs.w + 6 || y1 < top - rh - 20 || y0 > top + 1) continue;
+        if (hs.side) { if (y1 > top - rh) return true; }
+        else { const ax = hs.x - 5, bx = hs.x + hs.w + 5, px = hs.x + hs.w / 2, py = top - rh; if (corners.some(([cx, cy]) => inTri(cx, cy, ax, top + 1, px, py, bx, top + 1))) return true; if (px > x0 && px < x1 && py < y1) return true; }
+        if (hs.chim) { const cx = hs.x + hs.w * hs.chim.u, cy0 = top - hs.roofH * 0.9 - hs.chim.h * 0.3; if (x1 > cx - hs.chim.w / 2 && x0 < cx + hs.chim.w / 2 && y1 > cy0 && y0 < top) return true; }
+      }
+      for (const tr of trees) if (tr.ri < w.row && x1 > tr.x - tr.r && x0 < tr.x + tr.r && y1 > tr.y - tr.r * 2.3 && y0 < tr.y) return true;
+      if (w.row > tower.ri && x1 > tower.x - tower.w / 2 - 6 && x0 < tower.x + tower.w / 2 + 6 && y1 > -tower.base - tower.h - 80) return true;
+      return false;
+    };
+    // place windows only where they are fully visible: candidate grid on each wall, top-down
+    for (const hs of houses) {
+      const top = hs.y - hs.h; const maxN = hs.cols * 2; let k = 0;
+      for (let wy = top + 7; wy + 9 < hs.y - 3 && hs.wins.length < maxN; wy += 14, k++) {
+        for (let wc = 0; wc < hs.cols; wc++) {
+          if (hs.door && wy + 9 > hs.y - 18 && wc === 0) continue;
+          const win = { x: hs.x + (hs.w * (wc + 0.5)) / hs.cols - 3.5, y: wy, w: 7, h: 9, row: hs.ri, rank: 0, hue: A.hash(hs.x * 0.37 + wy + wc), house: hs };
+          if (!covered(win)) { hs.wins.push(win); windows.push(win); }
+        }
+      }
+    }
     // rank for "lit" fraction (random scatter), cascade order (center outward w/ jitter)
     windows.forEach((w, i) => { w.rank = A.hash(i * 3.17 + seed * 11.3); w.key = Math.hypot(w.x - 40, (w.y + 150) * 1.6) + A.hash(i * 7.7 + seed) * 150; });
     windows.sort((a, b) => a.key - b.key);
@@ -584,7 +613,7 @@
       }
       // overall town warmth
       const avg = sumB / M.windows.length;
-      if (avg > 0.02) { ctx.save(); ctx.translate(X + 30 * s, Y - 200 * s); ctx.scale(1, 0.6); spr(ctx, glowSprite('#ff9a4a'), 0, 0, 520 * s, 0.24 * Math.sqrt(avg)); ctx.restore(); }
+      if (avg > 0.02) { ctx.save(); ctx.translate(X + 30 * s, Y - 200 * s); ctx.scale(1, 0.5); spr(ctx, glowSprite('#ff9a4a'), 0, 0, 460 * s, 0.26 * Math.sqrt(avg)); ctx.restore(); }
       ctx.globalCompositeOperation = 'source-over';
     }
     ctx.globalCompositeOperation = 'lighter';
@@ -648,7 +677,7 @@
     for (let k = 0; k < NB; k++) { ctx.fillStyle = cols[k]; ctx.fill(paths[k]); }
     if (light && nl) {
       ctx.save(); const lc = light.color || A.PAL.warm;
-      const bc = [rgba(mixc(lc, '#ffffff', 0.15), 0.55 * ls), rgba(mixc(lc, '#503020', 0.3), 0.3 * ls), rgba(mixc(lc, '#2a2040', 0.55), 0.13 * ls)];
+      const bc = [rgba(mixc(lc, '#ffffff', 0.1), 0.38 * ls), rgba(mixc(lc, '#503030', 0.35), 0.2 * ls), rgba(mixc(lc, '#2a2040', 0.55), 0.08 * ls)];
       for (let k = 0; k < 3; k++) { ctx.fillStyle = bc[k]; ctx.fill(back[k]); }
       ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, o.hRef * 0.0045);
       const hot = mixc(lc, '#ffffff', 0.35);
@@ -687,7 +716,7 @@
   const hillY = (xl) => { const u = xl / (xl < 0 ? HILL.W * 0.95 : HILL.W * 1.1); const a = Math.abs(u); return a >= 1 ? 0 : -HILL.H * Math.pow(1 - a * a, 0.75) + 6 * A.noise(xl * 0.01, 4); };
   const hillModel = (seed) => cached('hill' + seed, () => {
     const r = A.rng(seed * 17 + 3); const ridge = [], body = [], susuki = [], flowers = [];
-    for (let xl = -1400; xl <= 1400; xl += 4.2) {
+    for (let xl = -1400; xl <= 1400; xl += 5) {
       const hk = 0.35 + 0.65 * Math.pow(r(), 0.7);
       ridge.push({ xl, dy: r() * 6, h: 70 * hk, w: 3 + r() * 3, lean: (r() - 0.5) * 0.5, ph: r() * TAU, flex: r(), curl: (r() - 0.5) * 0.8, shade: A.clamp(0.25 + 0.55 * hk + (r() - 0.5) * 0.4, 0, 0.999) });
     }
@@ -985,28 +1014,27 @@
     ctx.restore();
   };
   // normalized (0..1) little girl with a bob haircut, waving her right hand (viewer's right)
-  E.MIO_CONSTELLATION = {
-    points: [
+  const MIO_PTS = [
       { x: 0.42, y: 0.04, m: 0.75 }, // 0 top of head
-      { x: 0.29, y: 0.10, m: 0.6 },  // 1 left temple
-      { x: 0.26, y: 0.26, m: 0.8 },  // 2 left bob tip (flicks out)
+      { x: 0.30, y: 0.10, m: 0.6 },  // 1 left temple
+      { x: 0.24, y: 0.27, m: 0.8 },  // 2 left bob tip (flicks out)
       { x: 0.42, y: 0.31, m: 0.55 }, // 3 chin
-      { x: 0.58, y: 0.26, m: 0.8 },  // 4 right bob tip
-      { x: 0.55, y: 0.10, m: 0.6 },  // 5 right temple
+      { x: 0.60, y: 0.27, m: 0.8 },  // 4 right bob tip
+      { x: 0.54, y: 0.10, m: 0.6 },  // 5 right temple
       { x: 0.35, y: 0.42, m: 0.65 }, // 6 left shoulder
       { x: 0.49, y: 0.42, m: 0.65 }, // 7 right shoulder
       { x: 0.20, y: 0.60, m: 0.6 },  // 8 left hand (arm down)
-      { x: 0.22, y: 0.74, m: 0.8 },  // 9 skirt hem left
-      { x: 0.62, y: 0.74, m: 0.8 },  // 10 skirt hem right
-      { x: 0.35, y: 0.95, m: 0.6 },  // 11 left foot
-      { x: 0.49, y: 0.95, m: 0.6 },  // 12 right foot
+      { x: 0.25, y: 0.74, m: 0.8 },  // 9 skirt hem left
+      { x: 0.59, y: 0.74, m: 0.8 },  // 10 skirt hem right
+      { x: 0.32, y: 0.96, m: 0.6 },  // 11 left foot
+      { x: 0.52, y: 0.96, m: 0.6 },  // 12 right foot
       { x: 0.66, y: 0.33, m: 0.6 },  // 13 right elbow
       { x: 0.76, y: 0.12, m: 1.0 },  // 14 waving hand (brightest)
-    ],
-    // drawing order: head → shoulders → dress → legs → lowered arm → waving arm last
-    lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [3, 6], [3, 7], [6, 9], [7, 10], [9, 10], [9, 11], [10, 12], [6, 8], [7, 13], [13, 14]],
-    hand: 14, head: 0,
-  };
+  ];
+  // drawing order: head → shoulders → dress → legs → lowered arm → waving arm last
+  const MIO_LINES = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [3, 6], [3, 7], [6, 9], [7, 10], [9, 10], [9, 11], [10, 12], [6, 8], [7, 13], [13, 14]];
+  // usable both as an array of points and as {points, lines} (e.g. A.env.constellation(ctx, t, {...A.env.fitConstellation(A.env.MIO_CONSTELLATION, x, y, w, h), p}))
+  E.MIO_CONSTELLATION = Object.assign(MIO_PTS, { points: MIO_PTS, lines: MIO_LINES, hand: 14, head: 0 });
   // helper: scale MIO_CONSTELLATION (or any normalized set) into a box → {points, lines}
   E.fitConstellation = (def, x, y, w, h) => ({ points: def.points.map((p) => ({ x: x + p.x * w, y: y + p.y * h, m: p.m })), lines: def.lines });
 })();

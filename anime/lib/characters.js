@@ -36,30 +36,48 @@
   // o: {sh, sd(影のずれ量), moon(月リムα), cx,cy(パーツ中心: 光源用), fall, lw(0で線なし), extra(ctx)}
   function paint(ctx, path, base, o = {}) {
     ctx.fillStyle = base; ctx.fill(path);
+    const sd = o.sd ?? 5; const mr = (o.moon ?? (sd >= 4 ? 0.22 : 0)) * S.moon;
+    const lit = S.light && o.cx !== undefined;
+    if (sd <= 0 && mr <= 0 && !o.extra && !lit) { if (o.lw !== 0) { ctx.lineWidth = o.lw || S.lw; ctx.strokeStyle = o.ink || P.ink; ctx.stroke(path); } return; }
     const Ci = ctx.getTransform().inverse();
     ctx.save(); ctx.clip(path);
     const k = localKey(Ci);
-    const sd = o.sd ?? 5;
     if (sd > 0) { const p = new Path2D(path); p.addPath(path, shift(k.x * sd, k.y * sd)); ctx.fillStyle = o.sh || shd(base); ctx.fill(p, 'evenodd'); }
     if (o.extra) o.extra(ctx, k);
-    const mr = (o.moon ?? ((o.sd ?? 5) >= 4 ? 0.22 : 0)) * S.moon;
     if (mr > 0) { const rw = o.mw ?? 1.8; const p = new Path2D(path); p.addPath(path, shift(-k.x * rw, -k.y * rw)); ctx.fillStyle = rgba(MOONRIM, mr); ctx.fill(p, 'evenodd'); }
-    if (S.light && o.cx !== undefined) {
+    if (lit) {
       const lp = Ci.transformPoint(S.light.p);
       let dx = lp.x - o.cx, dy = lp.y - o.cy; const d = hyp(dx, dy) || 1; const fall = o.fall || S.light.r || 360;
       const st = S.light.str * A.clamp(1.15 - d / fall);
       if (st > 0.01) {
         const g = ctx.createRadialGradient(lp.x, lp.y, 0, lp.x, lp.y, fall * 0.8);
         g.addColorStop(0, rgba(S.light.color, (o.wash ?? 0.75) * st)); g.addColorStop(1, rgba(S.light.color, 0));
-        ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = g; ctx.fillRect(lp.x - fall, lp.y - fall, fall * 2, fall * 2);
+        ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = g; ctx.fill(path);
         ctx.globalCompositeOperation = 'source-over';
         dx /= d; dy /= d; const rw = (o.rimW ?? 3.2) * (0.5 + 0.6 * st);
         const p = new Path2D(path); p.addPath(path, shift(-dx * rw, -dy * rw));
-        ctx.fillStyle = rgba(mix(S.light.color, '#ffffff', 0.35), Math.min(1, st * 1.1)); ctx.fill(p, 'evenodd');
+        ctx.fillStyle = rgba(mix(S.light.color, '#ffffff', 0.35), Math.min(1, st * 1.1) * (o.rimA ?? 1)); ctx.fill(p, 'evenodd');
       }
     }
     ctx.restore();
     if (o.lw !== 0) { ctx.lineWidth = o.lw || S.lw; ctx.strokeStyle = o.ink || P.ink; ctx.stroke(path); }
+  }
+  // カプセル（手足）用の軽量シェーディング：clip を使わず「影色で塗る→光側へずらして縮めた本体色」で三日月影を作る
+  function paintCap(ctx, a, b, ra, rb, base, o = {}) {
+    const path = capsule(a, b, ra, rb);
+    const sd = (o.sd ?? 4) / 2; const k = localKey(ctx.getTransform().inverse());
+    ctx.fillStyle = o.sh || shd(base); ctx.fill(path);
+    ctx.fillStyle = base; ctx.fill(capsule({ x: a.x + k.x * sd, y: a.y + k.y * sd }, { x: b.x + k.x * sd, y: b.y + k.y * sd }, ra - sd, rb - sd));
+    if (S.light && o.cx !== undefined) paint(ctx, path, 'rgba(0,0,0,0)', { sd: 0, moon: 0, lw: 0, cx: o.cx, cy: o.cy, wash: 0.6 });
+    if (o.lw !== 0) { ctx.lineWidth = o.lw || S.lw; ctx.strokeStyle = P.ink; ctx.stroke(path); }
+    return path;
+  }
+  // 複数カプセルの手足：影→本体の2パスで関節の継ぎ目を出さない（線画は呼び出し側で union ストローク）
+  function paintLimb(ctx, segs, base, o = {}) {
+    const sd = (o.sd ?? 4) / 2; const k = localKey(ctx.getTransform().inverse());
+    ctx.fillStyle = shd(base); for (const [a, b, ra, rb] of segs) ctx.fill(capsule(a, b, ra, rb));
+    ctx.fillStyle = base; for (const [a, b, ra, rb] of segs) ctx.fill(capsule({ x: a.x + k.x * sd, y: a.y + k.y * sd }, { x: b.x + k.x * sd, y: b.y + k.y * sd }, ra - sd, rb - sd));
+    if (S.light && o.cx !== undefined) for (const [a, b, ra, rb] of segs) paint(ctx, capsule(a, b, ra, rb), 'rgba(0,0,0,0)', { sd: 0, moon: 0, lw: 0, cx: o.cx, cy: o.cy, wash: 0.6 });
   }
   function toOuter(ctx, x, y) { const d = ctx.getTransform().transformPoint(new DOMPoint(x, y)); const q = S.M0i.transformPoint(d); return { x: q.x, y: q.y }; }
 
@@ -113,7 +131,7 @@
     surprised: { open: 1.14, lower: 0, bi: 7, bo: 5, pupil: 0.72, mouth: 'o', blush: 0.5, tilt: 0 },
     worried: { open: 0.95, lower: 0.12, bi: 5, bo: -2, pupil: 1, mouth: 'wavy', blush: 0.5, tilt: -0.25 },
     smile: { open: 0.92, lower: 0.5, bi: 2, bo: 1, pupil: 1, mouth: 'smile', blush: 0.85, tilt: 0 },
-    determined: { open: 0.9, lower: 0.12, bi: -4, bo: 2.5, pupil: 1, mouth: 'firm', blush: 0.5, tilt: 0.35 },
+    determined: { open: 0.82, lower: 0.2, bi: -6, bo: 3.5, pupil: 0.95, mouth: 'firm', blush: 0.55, tilt: 0.55 },
     teary_smile: { open: 0.86, lower: 0.46, bi: 4, bo: -1, pupil: 1.06, mouth: 'smile', blush: 1, tilt: -0.15, gloss: 1, tear: 1 },
     sad: { open: 0.74, lower: 0.12, bi: 5, bo: -3, pupil: 1, mouth: 'frown', blush: 0.4, tilt: -0.3, gloss: 0.5 },
   };
@@ -121,9 +139,10 @@
 
   // 走りのキーフレーム（u: 0..1）→ [足首x, 足首y, つま先角]
   const RUNK = [[0, 30, -12, -0.25], [0.22, 2, -10, 0], [0.45, -34, -15, 0.55], [0.62, -34, -64, 1.05], [0.8, 4, -60, 0.45], [0.92, 30, -32, -0.05]];
-  function runKey(u) {
-    const n = RUNK.length; let i = n - 1; for (let j = 0; j < n; j++) if (RUNK[j][0] <= u) i = j;
-    const k0 = RUNK[(i - 1 + n) % n], k1 = RUNK[i], k2 = RUNK[(i + 1) % n], k3 = RUNK[(i + 2) % n];
+  const WALKK = [[0, 22, -10, -0.2], [0.5, -20, -10, 0.15], [0.64, -17, -20, 0.5], [0.8, 3, -25, 0.12], [0.93, 20, -14, -0.2]];
+  function runKey(u, K = RUNK) {
+    const n = K.length; let i = n - 1; for (let j = 0; j < n; j++) if (K[j][0] <= u) i = j;
+    const k0 = K[(i - 1 + n) % n], k1 = K[i], k2 = K[(i + 1) % n], k3 = K[(i + 2) % n];
     const u1 = k1[0], u2 = i + 1 < n ? k2[0] : 1; const f = (u - u1) / (u2 - u1);
     const cr = (a, b, c, d) => 0.5 * (2 * b + (c - a) * f + (2 * a - 5 * b + 4 * c - d) * f * f + (3 * b - a - 3 * c + d) * f * f * f);
     return [1, 2, 3].map((m) => cr(k0[m], k1[m], k2[m], k3[m]));
@@ -150,6 +169,14 @@
         for (let i = 0; i < 2; i++) { const k = runKey((u0 + i * 0.5) % 1); R.ankles.push({ x: k[0], y: k[1] }); R.foot.push(k[2]); }
         R.runPh = ph; break;
       }
+      case 'walk': {
+        const ph = t * TAU * 0.9; R.lean = 0.05; R.flutter = 0.3;
+        const u0 = (((t * 0.9) % 1) + 1) % 1;
+        R.pelvis = { x: 0, y: -158 - 3 * cos(4 * PI * u0) };
+        R.ankles = []; R.foot = [];
+        for (let i = 0; i < 2; i++) { const k = runKey((u0 + i * 0.5) % 1, WALKK); R.ankles.push({ x: k[0], y: k[1] }); R.foot.push(k[2]); }
+        R.runPh = ph; break;
+      }
     }
     return R;
   }
@@ -161,16 +188,16 @@
     const skin = far ? mix(C.skin, shd(C.skin), 0.3) : C.skin; const sock = far ? mix(C.sock, shd(C.sock), 0.3) : C.sock;
     const cx = (hip.x + a.x) / 2, cy = (hip.y + a.y) / 2;
     const th = capsule(hip, k, 10.5, 7.8), sh = capsule(k, a, 7.8, 5.8);
-    if (part === 'upper') { paint(ctx, th, skin, { sd: 3.5, cx, cy }); return { hip, k, a }; }
+    if (part === 'upper') { paintCap(ctx, hip, k, 10.5, 7.8, skin, { sd: 3.5, cx, cy }); return { hip, k, a }; }
     ctx.lineWidth = S.lw * 2; ctx.strokeStyle = P.ink; if (part === 'all') ctx.stroke(th); ctx.stroke(sh);
-    if (part === 'all') paint(ctx, th, skin, { lw: 0, sd: 3.5, cx, cy });
-    paint(ctx, sh, skin, { lw: 0, sd: 3.5, cx, cy });
+    if (part === 'all') paintLimb(ctx, [[hip, k, 10.5, 7.8], [k, a, 7.8, 5.8]], skin, { sd: 3.5, cx, cy });
+    else paintCap(ctx, k, a, 7.8, 5.8, skin, { lw: 0, sd: 3.5, cx, cy });
     if (part === 'lower') { // knee cap (covers the joint seam)
       ctx.save(); ctx.clip(th); paint(ctx, ellipseP(k.x, k.y, 8.6, 8.6), skin, { lw: 0, sd: 2.5, cx, cy }); ctx.restore();
       ctx.strokeStyle = P.ink; ctx.lineWidth = S.lw; ctx.beginPath(); ctx.arc(k.x, k.y, 7.8, -2.4, 1.2); ctx.stroke();
     }
     const st = lerpP(a, k, 0.42);
-    paint(ctx, capsule(st, a, 7.2, 6.5), sock, { sd: 3, lw: S.lw * 0.8, cx, cy });
+    paintCap(ctx, st, a, 7.2, 6.5, sock, { sd: 3, lw: S.lw * 0.8, cx, cy });
     // shoe
     ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(R.foot[i] || 0);
     const p = new Path2D();
@@ -197,7 +224,7 @@
     const dir = { x: (w.x - e.x) / ARM2, y: (w.y - e.y) / ARM2 }; const ang = Math.atan2(dir.y, dir.x) - PI / 2;
     // hand behind cuff? mitten is drawn after sleeve so it sits over cuff edge
     ctx.lineWidth = S.lw * 2; ctx.strokeStyle = P.ink; ctx.stroke(up); ctx.stroke(fo);
-    paint(ctx, up, cc, { lw: 0, sd: 4, cx, cy }); paint(ctx, fo, cc, { lw: 0, sd: 4, cx, cy });
+    paintLimb(ctx, [[sh, e, 9, 7.4], [e, w, 7.4, 7]], cc, { sd: 4, cx, cy });
     // cuff
     ctx.save(); ctx.translate(w.x, w.y); ctx.rotate(ang);
     ctx.strokeStyle = rgba(P.ink, 0.55); ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-6.5, -5); ctx.quadraticCurveTo(0, -3, 6.5, -5); ctx.stroke();
@@ -214,7 +241,7 @@
       const p = new Path2D(); // palm + fingers (mitten with finger splits)
       p.moveTo(-6, -1); p.bezierCurveTo(-9, 6, -9, 18, -4, 20); p.bezierCurveTo(0, 22, 5, 21, 7, 17); p.bezierCurveTo(9, 10, 8, 3, 6, -1); p.closePath();
       const th = capsule({ x: 5, y: 4 }, { x: 11, y: 10 }, 2.8, 2.4);
-      paint(ctx, th, skin, { sd: 1.5, lw: S.lw * 0.8 });
+      paint(ctx, th, skin, { sd: 0, lw: S.lw * 0.8 });
       paint(ctx, p, skin, { sd: 2.5, lw: S.lw * 0.85 });
       ctx.strokeStyle = rgba(P.ink, 0.5); ctx.lineWidth = 0.9; ctx.beginPath();
       ctx.moveTo(-2.5, 20.5); ctx.lineTo(-2.4, 14); ctx.moveTo(1.2, 21); ctx.lineTo(1.2, 14.5); ctx.moveTo(4.5, 19); ctx.lineTo(4, 14); ctx.stroke();
@@ -279,9 +306,9 @@
     const co = new Path2D();
     co.moveTo(-14, -104); co.bezierCurveTo(-16, -96, -8, -90, 1, -94); co.bezierCurveTo(4, -95, 8, -96, 9, -99);
     co.bezierCurveTo(11, -94, 19, -92, 22, -97); co.bezierCurveTo(24, -101, 22, -104, 20, -106); co.bezierCurveTo(8, -103, -2, -103, -14, -104); co.closePath();
-    paint(ctx, co, C.collar, { sd: 2, lw: S.lw * 0.8, cx: 4, cy: -100 });
+    paint(ctx, co, C.collar, { sd: 0, lw: S.lw * 0.8 });
     const rb = new Path2D(); rb.moveTo(9, -98); rb.bezierCurveTo(3, -103, 1, -94, 9, -96.5); rb.bezierCurveTo(17, -94, 16, -103, 9, -98); rb.closePath();
-    paint(ctx, rb, C.ribbon, { sd: 1.5, lw: S.lw * 0.7, moon: 0 });
+    paint(ctx, rb, C.ribbon, { sd: 0, lw: S.lw * 0.7, moon: 0 });
     const rt = new Path2D(); rt.moveTo(8, -97); rt.lineTo(5.5, -90); rt.lineTo(8.5, -91.5); rt.lineTo(10, -97); rt.moveTo(10, -97); rt.lineTo(13, -90.5); rt.lineTo(10.5, -97);
     paint(ctx, rt, C.ribbon, { sd: 0, lw: S.lw * 0.6, moon: 0 });
   }
@@ -314,7 +341,7 @@
     p.quadraticCurveTo(-74 + w, 58, -81 + w * 1.4, 53 + w2); p.quadraticCurveTo(-64 + w, 57, -54 + w * 0.8, 53);
     p.bezierCurveTo(-30, 58, 18, 58, 44 + w * 0.6, 51); p.quadraticCurveTo(56 + w, 58, 66 + w * 1.3, 53 - w2);
     p.quadraticCurveTo(61 + w, 44, 60, 30); p.bezierCurveTo(63, -10, 42, -67, 2, -67); p.closePath();
-    paint(ctx, p, mix(C.hair, shd(C.hair), 0.35), { sd: 6, moon: 0.4, mw: 2.4, cx: 0, cy: 0, wash: 0.25, extra: (c) => {
+    paint(ctx, p, mix(C.hair, shd(C.hair), 0.35), { sd: 6, moon: 0.4, mw: 2.4, cx: 0, cy: 0, wash: 0.25, rimW: 2, rimA: 0.6, extra: (c) => {
       c.strokeStyle = rgba('#12123a', 0.6); c.lineWidth = 1.1; c.beginPath();
       c.moveTo(-60, 10); c.quadraticCurveTo(-62, 36, -66 + w, 50); c.moveTo(56, 20); c.quadraticCurveTo(58, 38, 60 + w, 50); c.stroke();
     } });
@@ -463,16 +490,18 @@
     drawMouth(ctx, 15, 44.5, E.mouth, H.mo);
     // tears
     if (E.tear) {
-      const ph = (t * 0.45) % 1; const ty = 30 + ph * 20; const ta = A.clamp(1 - ph * 1.1) * E.tear;
-      ctx.strokeStyle = rgba('#dff4ff', 0.5 * ta); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-18, 28); ctx.quadraticCurveTo(-20, 30 + ph * 8, -19, ty - 3); ctx.stroke();
+      const ph = (t * 0.45) % 1; const ty = 33 + ph * 18; const ta = (0.55 + 0.45 * A.clamp(1 - ph * 1.2)) * E.tear;
+      ctx.strokeStyle = rgba('#e8f8ff', 0.75 * ta); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(-18, 28); ctx.quadraticCurveTo(-20, 30 + ph * 8, -19, ty - 3); ctx.stroke();
       const d = new Path2D(); d.moveTo(-19, ty - 5); d.bezierCurveTo(-17, ty - 1, -15.5, ty + 1, -17, ty + 3); d.bezierCurveTo(-18.5, ty + 4.5, -21.5, ty + 3.5, -21.2, ty + 1.2); d.bezierCurveTo(-21, ty - 1, -19.6, ty - 3, -19, ty - 5); d.closePath();
-      ctx.fillStyle = rgba('#c8ecff', 0.85 * ta); ctx.fill(d); ctx.strokeStyle = rgba('#5a7fc0', 0.8 * ta); ctx.lineWidth = 0.8; ctx.stroke(d);
+      ctx.fillStyle = rgba('#d8f2ff', 0.95 * ta); ctx.fill(d); ctx.strokeStyle = rgba('#4a6fb8', 0.9 * ta); ctx.lineWidth = 0.8; ctx.stroke(d);
       ctx.fillStyle = rgba('#ffffff', ta); ctx.beginPath(); ctx.arc(-18.3, ty + 0.6, 0.9, 0, TAU); ctx.fill();
       // welling tear at far eye
       ctx.fillStyle = rgba('#dff4ff', 0.8 * E.tear); ctx.beginPath(); ctx.ellipse(38, 27.5, 2, 2.6, 0, 0, TAU); ctx.fill();
     }
     // fringe/cap
-    paint(ctx, H.cap, C.hair, { sd: 5, moon: 0.45, mw: 2.4, cx: 0, cy: -20, fall: 320, wash: 0.3, extra: (c) => {
+    paint(ctx, H.cap, C.hair, { sd: 5, moon: 0.45, mw: 2.4, cx: 0, cy: -20, fall: 320, wash: 0.3, rimW: 2, rimA: 0.7, extra: (c) => {
+      const hg = c.createLinearGradient(0, -66, 0, 10); hg.addColorStop(0, rgba('#4a52a0', 0.35)); hg.addColorStop(0.55, rgba('#4a52a0', 0.05)); hg.addColorStop(1, rgba('#0a0a2a', 0.25));
+      c.fillStyle = hg; c.fillRect(-80, -70, 160, 90);
       // strand lines (clump separations)
       c.strokeStyle = rgba('#131338', 0.55); c.lineWidth = 0.9; c.beginPath();
       for (const [x0, x1, bend] of [[-4, -6, -3], [8, 18, 2], [22, 28, 3], [-20, -28, -4], [36, 39, 2]]) { c.moveTo(x0 * 0.5, -58); c.quadraticCurveTo(x0 + bend, -30, x1, -2); }
@@ -489,7 +518,7 @@
     const sl = new Path2D(); const w2 = H.hw2;
     sl.moveTo(-50, -12); sl.bezierCurveTo(-60, 2, -61, 26, -60 + w * 0.6, 42); sl.quadraticCurveTo(-64 + w, 52, -72 + w * 1.3, 51 + w2);
     sl.quadraticCurveTo(-60 + w, 51, -51 + w * 0.7, 47); sl.bezierCurveTo(-45, 36, -41, 16, -40, -2); sl.closePath();
-    paint(ctx, sl, C.hair, { sd: 3, moon: 0.4, cx: -50, cy: 20, wash: 0.3, extra: (c) => {
+    paint(ctx, sl, C.hair, { sd: 3, moon: 0.4, cx: -50, cy: 20, wash: 0.3, rimW: 2, rimA: 0.6, extra: (c) => {
       c.strokeStyle = rgba('#131338', 0.6); c.lineWidth = 1; c.beginPath(); c.moveTo(-50, 0); c.quadraticCurveTo(-54, 26, -58 + w, 46); c.stroke();
     } });
     // far side lock sliver
@@ -554,13 +583,13 @@
     const hTilt = (o.headTilt || 0) + R.head + lean * 0.3 + sin(t * 1.1) * 0.012;
     const nTop = add(neckB, rot({ x: 0, y: -18 }, lean * 0.6));
     const headFrame = (c) => { c.translate(nTop.x, nTop.y); c.rotate(hTilt); c.translate(2, -44); };
-    const H = { E, mo, hw: ws * wl * 9 + sin(t * 1.7) * 1.2, hw2: ws * 3 * sin(t * 5.1), cap: null };
+    const H = { E, mo, hw: ws * wl * 12 + sin(t * 1.7) * 1.2, hw2: ws * 3 * sin(t * 5.1), cap: null };
     H.cap = makeCap(H);
     // arms setup
     const shN = T({ x: -22, y: -94 }), shF = T({ x: 25, y: -93 });
     let arms = []; // [{sh, wr, bend, hand, far, layer}]
     let cupC = null;
-    const hangN = { x: shN.x - 4, y: shN.y + 84 }, hangF = { x: shF.x + 7, y: shF.y + 84 };
+    const sway = sin(t * 1.3) * 1.5; const hangN = { x: shN.x + 2 + sway, y: shN.y + 82 }, hangF = { x: shF.x + 9 - sway * 0.5, y: shF.y + 81 };
     switch (pose) {
       case 'stand': arms = [{ sh: shF, wr: hangF, bend: 1, hand: 'mitten', far: 1, layer: 0 }, { sh: shN, wr: hangN, bend: 1, hand: 'mitten', far: 0, layer: 1 }]; break;
       case 'cup': case 'crouch_cup': {
@@ -584,6 +613,14 @@
         }
         break;
       }
+      case 'walk': {
+        for (let i = 0; i < 2; i++) {
+          const q = R.runPh + i * PI; const a = -cos(q) * 0.38; const sh = i ? shN : shF;
+          const el = add(sh, { x: sin(a) * ARM1, y: cos(a) * ARM1 }); const b = a + 0.25; const wr = add(el, { x: sin(b) * ARM2, y: cos(b) * ARM2 });
+          arms.push({ sh, wr, bend: 1, hand: 'mitten', far: i ? 0 : 1, layer: i ? 1 : 0, elbow: el });
+        }
+        break;
+      }
       case 'call': arms = []; break;
     }
     // ---------- draw
@@ -593,7 +630,7 @@
         const cx = (a.sh.x + a.wr.x) / 2, cy = (a.sh.y + a.wr.y) / 2;
         const up = capsule(a.sh, a.elbow, 9, 7.4), fo = capsule(a.elbow, a.wr, 7.4, 7);
         ctx.lineWidth = S.lw * 2; ctx.strokeStyle = P.ink; ctx.stroke(up); ctx.stroke(fo);
-        paint(ctx, up, cc, { lw: 0, sd: 4, cx, cy }); paint(ctx, fo, cc, { lw: 0, sd: 4, cx, cy });
+        paintLimb(ctx, [[a.sh, a.elbow, 9, 7.4], [a.elbow, a.wr, 7.4, 7]], cc, { sd: 4, cx, cy });
         const ang = Math.atan2(a.wr.y - a.elbow.y, a.wr.x - a.elbow.x) - PI / 2;
         ctx.save(); ctx.translate(a.wr.x, a.wr.y); ctx.rotate(ang); ctx.strokeStyle = rgba(P.ink, 0.55); ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-6.5, -5); ctx.quadraticCurveTo(0, -3, 6.5, -5); ctx.stroke(); ctx.restore();
         drawHand(ctx, a.wr, ang + (a.hr ? 0 : 0), a.hand, skin, a.far, cx, cy);
