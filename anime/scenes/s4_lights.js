@@ -391,14 +391,14 @@
   function cutC(ctx, t) {
     const lt = t - 40.3; const k = A.ease.inOutSine(A.range(t, 40.3, 44.6));
     // Mio (chest-up) and Hoshi lifting off her head
-    const s = 2.75, mx = 820, fy = 1560;
+    const s = 2.6, mx = 820, fy = 1330;
     const lift = A.ease.inOutCubic(A.range(t, 40.55, 41.9));
     const antic = Math.exp(-Math.pow((t - 40.48) / 0.06, 2));           // squash before lift-off
     const pre = A.range(t, 44.15, T_BURST);                               // contraction before the burst
     const glow = A.clamp(A.lerp(0.3, 2, Math.pow(A.range(t, 40.5, 44.45), 1.25)), 0, 2);
     const hexpr = t < 40.9 ? 'weak' : t < 42.2 ? 'surprised' : 'joy';
     const orbit = lt * 0.12;
-    const cam = { x: A.lerp(900, 1010, k) + sin(orbit * 3) * 12, y: A.lerp(560, 430, k), zoom: A.lerp(1.0, 1.2, k) + 0.04 * pre, rot: A.lerp(-0.035, 0.025, k) };
+    const cam = { x: A.lerp(900, 1010, k) + sin(orbit * 3) * 12, y: A.lerp(560, 470, k), zoom: A.lerp(1.0, 1.15, k) + 0.04 * pre, rot: A.lerp(-0.035, 0.025, k) };
     const bs = A.shake(t * 2, 4 * A.range(t, 43.2, 44.6), 31);
     cam.x += bs.dx; cam.y += bs.dy;
     // bloom warmth
