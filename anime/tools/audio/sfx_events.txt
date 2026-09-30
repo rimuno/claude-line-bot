@@ -1,0 +1,15 @@
+  3.60  shooting star whoosh + shimmer (sputter 5.0–6.8)
+  7.40  soft impact (posu) + sparkle
+ 11.80  grass footsteps x3 (11.8 / 12.3 / 12.8)
+ 17.60  scoop sparkle (kira)
+ 23.50  power-down flicker (hum glides down with stutter, dip at 23.5)
+ 29.80  running footsteps x7 (every 0.2 s to 31.0)
+ 34.80  16 window-light chimes, F-major pentatonic ascending in 4-note waves
+ 36.20  lantern orb whoosh + rising glass chime
+ 38.80  fireflies flutter + tiny sparkles
+ 40.50  energy absorption swell (lp-sweep noise, swirl pan, rising sparkle density) -> 44.6
+ 44.60  BIG shimmering burst (transient, sub boom, down-sweep, bell spray)
+ 50.90  hairpin 'kiran' glint
+ 53.00  lift-off 'shuwaa' (rising band-pass noise + sparkle trail) to 55.0
+ 55.50  8 constellation twinkles F5 G5 A5 C6 D6 F6 A6 C7 (every 0.25 s)
+ 57.30  title shimmer (glass gliss + air + soft F chord bells)

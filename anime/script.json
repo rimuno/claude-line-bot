@@ -1,0 +1,128 @@
+{
+ "title": "星をひろった夜",
+ "duration": 60.0,
+ "fps": 30,
+ "scenes": [
+  {
+   "id": "s1_fall",
+   "start": 0.0,
+   "end": 9.0,
+   "desc": "夜空。町と丘を見下ろす。流れ星が落ちてくる"
+  },
+  {
+   "id": "s2_meet",
+   "start": 9.0,
+   "end": 21.0,
+   "desc": "丘の草むらでミオが泣いている小さな星ホシを見つける"
+  },
+  {
+   "id": "s3_promise",
+   "start": 21.0,
+   "end": 31.0,
+   "desc": "ホシは光が足りず帰れない。ミオが光を集めると約束"
+  },
+  {
+   "id": "s4_lights",
+   "start": 31.0,
+   "end": 45.0,
+   "desc": "町のみんなが光を貸してくれる。窓・ランタン・ホタルの光がホシに集まる"
+  },
+  {
+   "id": "s5_farewell",
+   "start": 45.0,
+   "end": 53.5,
+   "desc": "輝きを取り戻したホシが浮かび上がり、別れ"
+  },
+  {
+   "id": "s6_constellation",
+   "start": 53.5,
+   "end": 60.0,
+   "desc": "ホシが空へ。ミオの形の新しい星座が生まれる。タイトル"
+  }
+ ],
+ "lines": [
+  {
+   "speaker": "narrator",
+   "style": 31,
+   "start": 0.8,
+   "text": "夏の終わりの夜。空から、小さな星がひとつ、落ちてきました。",
+   "speed": 1.0
+  },
+  {
+   "speaker": "hoshi",
+   "style": 76,
+   "start": 9.4,
+   "text": "うう…いたいのだ…。ここ、どこなのだ？",
+   "speed": 1.2
+  },
+  {
+   "speaker": "mio",
+   "style": 8,
+   "start": 14.5,
+   "text": "えっ、星が…しゃべった！？"
+  },
+  {
+   "speaker": "mio",
+   "style": 8,
+   "start": 17.3,
+   "text": "だいじょうぶ？けが、してない？"
+  },
+  {
+   "speaker": "hoshi",
+   "style": 75,
+   "start": 21.3,
+   "text": "光が足りなくて…もう、空に帰れないのだ…。",
+   "speed": 1.15
+  },
+  {
+   "speaker": "mio",
+   "style": 8,
+   "start": 26.8,
+   "text": "じゃあ、わたしが光を集めてあげる！"
+  },
+  {
+   "speaker": "mio",
+   "style": 8,
+   "start": 31.4,
+   "text": "みんなー！少しだけ、光を貸して！"
+  },
+  {
+   "speaker": "grandpa",
+   "style": 42,
+   "start": 35.3,
+   "text": "ほれ、持っていきなさい。"
+  },
+  {
+   "speaker": "kid",
+   "style": 32,
+   "start": 38.0,
+   "text": "ぼくのも！がんばれー！"
+  },
+  {
+   "speaker": "hoshi",
+   "style": 1,
+   "start": 41.0,
+   "text": "あったかい…力があふれてくるのだ！"
+  },
+  {
+   "speaker": "hoshi",
+   "style": 1,
+   "start": 45.4,
+   "text": "ありがとう、ミオ。空から、ずっと見てるのだ。"
+  },
+  {
+   "speaker": "mio",
+   "style": 8,
+   "start": 50.4,
+   "text": "うん…ぜったい、忘れないよ。",
+   "speed": 0.95
+  },
+  {
+   "speaker": "narrator",
+   "style": 31,
+   "start": 53.8,
+   "text": "その夜、空に、新しい星座が生まれました。",
+   "speed": 1.1
+  }
+ ]
+}
